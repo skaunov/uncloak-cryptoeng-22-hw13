@@ -13,18 +13,18 @@
 ///
 /// Please add `-- --nocapture` to `cargo test` if you want to get the output similar to the tests from the source, as source only prints tests/examples with no assertions.
 ///
-/// Throughout the code there a lot of notes and snippets for myself to track the learning curve I had during the exercise. Of course, it would be removed in production commit, but I feel them
-/// to be appropriate for the exercise (including most of debug printing preserved).
+/// Throughout the code there a lot of notes and snippets for myself to track the learning curve I had during the exercise. Of course, it would be removed 
+/// in production commit, but I feel them to be appropriate for the exercise (including most of debug printing preserved in comments).
 // ~~TODO: align error system~~
 // ~~TODO limit p to be > 2~~
 // ~~TODO add U8192 back; behind a feature flag?~~
 // ~~TODO research if it's ok and secure to store coordinates as DynResidues and `retrieve()` 'em on access~~
-/* seems to be reasonable if points and curve parameters would be accessed via getters in source: but to mimic it better I tend to make them public, so only `p` going to be processed with this
-approach */
-/* looks like DynResidues _should be_ ok, but with superficial looking through it's not obvious; e g how `subtle` is used there, nevertheless it seems to be constant time (which isn't directly)
-about safe usage in structs; without `zeroize` feature both are very comparable */
-    /* With default feature flags of crypto bigint crate I see no difference in terms of security between storing `UInt` and DynResidue... . Didn't look into `subtle` and
-    zeroize features though. */
+/*   seems to be reasonable if points and curve parameters would be accessed via getters in source: but to mimic it better I tend to make them public, 
+so only `p` going to be processed with this approach */
+/*     looks like DynResidues _should be_ ok, but with superficial looking through it's not obvious; e g how `subtle` is used there, nevertheless 
+it seems to be constant time (which isn't directly) about safe usage in structs; without `zeroize` feature both are very comparable */
+    /*   With default feature flags of crypto bigint crate I see no difference in terms of security between storing `UInt` and DynResidue... . 
+    Didn't look into `subtle` and zeroize features though. */
 extern crate test;
 
 use crypto_bigint::Uint;
