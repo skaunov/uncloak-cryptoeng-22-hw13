@@ -2,7 +2,7 @@
 #![feature(iter_intersperse)]
 // there's a small `bench` in `mod tests` added when I tried to make initial implementation work in reasonable time
 #![feature(test)]
-/// This is migration of https://github.com/cjeudy/EllipticCurves to Rust. It aims to be as close as possible to "drop-in" replacement. Mentions of 
+/// This is migration of https://github.com/cjeudy/EllipticCurves to Rust. It aims to be as close as possible to "drop-in" replacement. Mentions of
 /// "source" through-out the crate usually means
 /// the original code at the forementioned link. Diviations from the source are mostly labeled (in the comments) or induced by Clippy.
 ///

@@ -46,7 +46,7 @@ impl EllipticCurve {
 
         // ~~TODO test what source would do when coefficient(s) would be greater than `modulus` (and reflect here)~~
         /*      it seems to be a boring case as no material jumps out of the Internet on me trying to superficially research the issue; without definitive parameters testing source is quite
-                inefficient; so let's just prohibit it since it anyway shouldn't ever happen, and watch if somebody would answer to https://www.reddit.com/r/ef1p/comments/xgsco5/comment/jd9ner7 */
+        inefficient; so let's just prohibit it since it anyway shouldn't ever happen, and watch if somebody would answer to https://www.reddit.com/r/ef1p/comments/xgsco5/comment/jd9ner7 */
         let panic_dont = true; // if modulus > Ufeat::from(isize::MAX as u64) {true} else {false};
                                // no need for it: the coefficients are ok to "wrap around"
 

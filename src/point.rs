@@ -433,7 +433,9 @@ impl std::ops::Mul<&Point> for Ufeat {
 //     }
 // }
 ///         Overload of the *= operator for a Point and an integer
-// TODO is it possible not to `clone` in ...Assign traits `impl`s?
+// ~~TODO is it possible not to `clone` in ...Assign traits `impl`s?~~
+//      it seems to me that with plain borrowing the answer is more or less "no": `AddAssign` `impl` would need to clone to be able to move the value out of exclusive borrow
+//      I guess it could be possible with more complex and smart pointers, but as soon as `Point` consists of lightweight `Rc` and `Copy`-types -- there will be no benefit from taking this path
 impl std::ops::MulAssign<Ufeat> for Point {
     fn mul_assign(&mut self, rhs: Ufeat) {
         *self = (self.clone() * rhs).expect(MSG_ASSIGNS_SHOULD_NOT_FAIL);
