@@ -1,6 +1,6 @@
-use std::{rc::Rc, fmt, ops::Neg};
+use super::{non_adjacent, EllipticCurve, Errs, Ufeat};
 use crypto_bigint::modular::runtime_mod::DynResidue;
-use super::{EllipticCurve, Ufeat, Errs, non_adjacent};
+use std::{fmt, ops::Neg, rc::Rc};
 
 const MSG_ASSIGNS_SHOULD_NOT_FAIL: &str = "use Assign traits only if you're sure it won't fail";
 
@@ -9,15 +9,18 @@ const MSG_ASSIGNS_SHOULD_NOT_FAIL: &str = "use Assign traits only if you're sure
 //     infinite, regular
 // }
 ///     Point of an elliptic curve
-#[derive(/* PartialEq,  */Eq, Clone)] #[allow(clippy::large_enum_variant)]
+#[derive(/* PartialEq,  */ Eq, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum Point {
-    AtInfinity{curve: Rc<EllipticCurve>},
+    AtInfinity {
+        curve: Rc<EllipticCurve>,
+    },
     Regular {
-        x: DynResidue<{Ufeat::LIMBS}>,
-        y: DynResidue<{Ufeat::LIMBS}>,
+        x: DynResidue<{ Ufeat::LIMBS }>,
+        y: DynResidue<{ Ufeat::LIMBS }>,
         // type_: PointType,
         // curve: /* &'curve */ EllipticCurve
-        curve: /* &'curve */ Rc<EllipticCurve>
+        curve: Rc<EllipticCurve>,
     },
 }
 
@@ -27,43 +30,65 @@ pub enum Point {
 //     // pub fn curve(&self) -> Rc<EllipticCurve> {&self.curve}
 // }
 
-impl Point/* <'_> */ {
+impl Point /* <'_> */ {
     #[inline]
-    pub fn new(curve: Rc<EllipticCurve>, x: Option<Ufeat>, y: Option<Ufeat>) -> Result<Point, Errs> {
+    pub fn new(
+        curve: Rc<EllipticCurve>,
+        x: Option<Ufeat>,
+        y: Option<Ufeat>,
+    ) -> Result<Point, Errs> {
         let (x_original, y_original) = (x.unwrap_or_default(), y.unwrap_or_default()); // dunb line to logically separate source migration and NCC-based addition
 
         // should notice that it's disputable design from a few angles; can't say I fond of the approach
         // let type_ = if x.is_some() {PointType::regular} else {PointType::infinite};
-        if x.is_none() {return Ok(Point::AtInfinity { curve })};
-        
+        if x.is_none() {
+            return Ok(Point::AtInfinity { curve });
+        };
+
         let (x, y) = (
-            DynResidue::new(&x.unwrap(), *curve.p()), 
-            DynResidue::new(&y.unwrap(), *curve.p())
+            DynResidue::new(&x.unwrap(), *curve.p()),
+            DynResidue::new(&y.unwrap(), *curve.p()),
         );
 
         // here's start of the added checks listed at https://research.nccgroup.com/2021/11/18/an-illustrated-guide-to-elliptic-curve-cryptography-validation
-        if x_original >= curve.original_p() || y_original >= curve.original_p() {return Err(Errs::NccModulus)}
+        if x_original >= curve.original_p() || y_original >= curve.original_p() {
+            return Err(Errs::NccModulus);
+        }
         let curve_ = Rc::clone(&curve);
         let result = Point::Regular { x, y, curve };
-        if !EllipticCurve::contains(curve_.as_ref(), &result) {return Err(Errs::NccOutOfTheCurve)}
+        if !EllipticCurve::contains(curve_.as_ref(), &result) {
+            return Err(Errs::NccOutOfTheCurve);
+        }
         // points at infinity are allowed to create, just not as a silent default
         // this implementation won't check subgroups as defining acceptable criteria would drive the exercise way off
 
         Ok(result)
     }
-    pub fn x(&self) -> Option<&DynResidue<{Ufeat::LIMBS}>> {if let Point::Regular { x, y: _, curve: _ } = self {Some(x)} else {None}}
-    pub fn y(&self) -> Option<&DynResidue<{Ufeat::LIMBS}>> {if let Point::Regular { x: _, y, curve: _ } = self {Some(y)} else {None}}
-    pub fn curve(&self) -> Rc<EllipticCurve> { 
+    pub fn x(&self) -> Option<&DynResidue<{ Ufeat::LIMBS }>> {
+        if let Point::Regular { x, y: _, curve: _ } = self {
+            Some(x)
+        } else {
+            None
+        }
+    }
+    pub fn y(&self) -> Option<&DynResidue<{ Ufeat::LIMBS }>> {
+        if let Point::Regular { x: _, y, curve: _ } = self {
+            Some(y)
+        } else {
+            None
+        }
+    }
+    pub fn curve(&self) -> Rc<EllipticCurve> {
         match self {
             Point::AtInfinity { curve } => Rc::clone(curve),
-            Point::Regular { x: _, y: _, curve } => Rc::clone(curve)
+            Point::Regular { x: _, y: _, curve } => Rc::clone(curve),
         }
-    } 
+    }
     /// in format suitable for creating `new`
     pub fn get(&self) -> (&EllipticCurve, Option<Ufeat>, Option<Ufeat>) {
         match self {
             Point::AtInfinity { curve } => (curve, None, None),
-            Point::Regular { x, y, curve } => (curve, Some(x.retrieve()), Some(y.retrieve()))
+            Point::Regular { x, y, curve } => (curve, Some(x.retrieve()), Some(y.retrieve())),
         }
     }
 
@@ -71,7 +96,7 @@ impl Point/* <'_> */ {
     // fn helper_new_point_at_infinity(&self) -> Self {
     //     // Point{curve: self.curve.clone(), ..Default::default()}
     //     Point::new(self.curve.clone(), None, Default::default()).expect("point at infinity creation doesn't fail")
-        
+
     //     // let mut result = Point::default();
     //     // result.curve = Rc::clone(&self.curve);
     //     // return result;
@@ -79,16 +104,17 @@ impl Point/* <'_> */ {
 }
 /// Default point: Infinite point of Secp256k1 curve
 #[cfg(test)]
-impl Default for Point/* <'_> */ {
+impl Default for Point /* <'_> */ {
     #[inline]
     fn default() -> Self {
         // Point::new(*Box::new(EllipticCurve::default()), None, None)
-        Point::new(Rc::new(EllipticCurve::default()), None, None).expect("point at infinity creation doesn't fail")
+        Point::new(Rc::new(EllipticCurve::default()), None, None)
+            .expect("point at infinity creation doesn't fail")
     }
 }
 ///         Controls the display in the command prompt
 ///         Controls the display through the print function
-impl fmt::Display for Point/* <'_> */ {
+impl fmt::Display for Point /* <'_> */ {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Point::Regular { x, y, curve } => {
@@ -105,7 +131,7 @@ impl fmt::Display for Point/* <'_> */ {
                     curve.name
                 )
             }
-        }  
+        }
     }
 }
 ///         Overload of the == operator for two Point objects
@@ -113,16 +139,40 @@ impl PartialEq for Point {
     fn eq(&self, other: &Self) -> bool {
         // ~~TODO replace to `return false`, but for debugging it's better to panic~~
         // if self.curve != other.curve {panic!("comparison of points from different curves")}
-        if self.curve() != other.curve() {return false;}
-        
+        if self.curve() != other.curve() {
+            return false;
+        }
+
         match (self, other) {
-            (Point::AtInfinity { curve: _ }, Point::Regular { curve: _, x: _, y: _ }) => false,
-            (Point::Regular { x: _, y: _, curve: _ }, Point::AtInfinity { curve: _ }) => false,
+            (
+                Point::AtInfinity { curve: _ },
+                Point::Regular {
+                    curve: _,
+                    x: _,
+                    y: _,
+                },
+            ) => false,
+            (
+                Point::Regular {
+                    x: _,
+                    y: _,
+                    curve: _,
+                },
+                Point::AtInfinity { curve: _ },
+            ) => false,
             (Point::AtInfinity { curve: _ }, Point::AtInfinity { curve: _ }) => true,
             (
-                Point::Regular { x: self_x, y: self_y, curve: _ }, 
-                Point::Regular { x: other_x, y: other_y, curve: _ }
-            ) => (self_x == other_x) && (self_y == other_y)
+                Point::Regular {
+                    x: self_x,
+                    y: self_y,
+                    curve: _,
+                },
+                Point::Regular {
+                    x: other_x,
+                    y: other_y,
+                    curve: _,
+                },
+            ) => (self_x == other_x) && (self_y == other_y),
         }
         // /* it would be cleaner if source would derive point type from presence of value in both of its coordinates */
         // if self.type_ != other.type_ {return false;}
@@ -138,11 +188,11 @@ impl PartialEq for Point {
     }
 }
 ///         Gives the symmetric point of the object
-impl std::ops::Neg for &Point/* <'_> */ {
+impl std::ops::Neg for &Point /* <'_> */ {
     type Output = Point;
     fn neg(self) -> Self::Output {
         match self {
-            Point::Regular{ x, y, curve } => 
+            Point::Regular{ x, y, curve } =>
                 /* ~~TODO check for y < p is needed due to~~
                     * the method docs
                         // this one was solved by switching to DynRes...
@@ -174,16 +224,28 @@ impl std::ops::Neg for &Point/* <'_> */ {
 //     }
 // }
 ///        Overload of the + operator for two `&Point` objects (+ is commutative)
-impl std::ops::Add for &Point/* <'_> */ {
+impl std::ops::Add for &Point /* <'_> */ {
     type Output = Result<Point, Errs>;
     fn add(self, point: Self) -> Self::Output {
         match point {
             Point::AtInfinity { curve: _ } => Ok(self.clone()),
-            Point::Regular { x: point_x_dynres, y: point_y_dynres, curve: _ } => {
+            Point::Regular {
+                x: point_x_dynres,
+                y: point_y_dynres,
+                curve: _,
+            } => {
                 match self {
                     Point::AtInfinity { curve: _ } => Ok(point.clone()),
-                    Point::Regular { x: self_x_dynres, y: self_y_dynres, curve } => {
-                        if point == &self.neg() {return Ok(Point::AtInfinity { curve: Rc::clone(curve) });}
+                    Point::Regular {
+                        x: self_x_dynres,
+                        y: self_y_dynres,
+                        curve,
+                    } => {
+                        if point == &self.neg() {
+                            return Ok(Point::AtInfinity {
+                                curve: Rc::clone(curve),
+                            });
+                        }
                         let /* (invL,  */lambd/* ) */ = {
                             if self == point {
                                 // if self.y.unwrap() == Ufeat::ZERO {return self.helper_new_point_at_infinity();}
@@ -219,14 +281,22 @@ impl std::ops::Add for &Point/* <'_> */ {
                         // let y = lambd.checked_mul(&self_x.sub_mod(&x, &self.curve.p)).unwrap() % self.curve.p;
                         let y = lambd * (self_x_dynres - x) - self_y_dynres;
                         // let y = y.sub_mod(&self.y.unwrap(), &self.curve.p);
-                        
+
                         // let M = Point::new(self.curve, Some(x.retrieve()), Some(y.retrieve()));
                         #[allow(non_snake_case)]
-                        let M = Point::Regular { x, y, curve: Rc::clone(curve) };//{curve: Rc::clone(&self.curve), x: Some(x), y: Some(y), type_: PointType::regular};
-                        if EllipticCurve::contains(curve, &M) {Ok(M)}
+                        let M = Point::Regular {
+                            x,
+                            y,
+                            curve: Rc::clone(curve),
+                        }; //{curve: Rc::clone(&self.curve), x: Some(x), y: Some(y), type_: PointType::regular};
+                        if EllipticCurve::contains(curve, &M) {
+                            Ok(M)
+                        }
                         // ~~TODO is there a more graceful way? Given that trait isn't suitable for `Result`.~~
-                            // turns out that `Add` actually *can* return `Result`!
-                        else {Err(Errs::ValueError)}
+                        //      turns out that `Add` actually *can* return `Result`!
+                        else {
+                            Err(Errs::ValueError)
+                        }
                     }
                 }
             }
@@ -234,13 +304,13 @@ impl std::ops::Add for &Point/* <'_> */ {
     }
 }
 /// Overload of the + operator for two Point objects (+ is commutative)
-impl std::ops::Add for Point/* <'_> */ {
+impl std::ops::Add for Point /* <'_> */ {
     type Output = Result<Self, Errs>;
     fn add(self, rhs: Self) -> Self::Output {
         &self + &rhs
     }
 }
-    // ~~TODO~~ `AddAssign` needs Deref https://github.com/cjeudy/EllipticCurves/blob/77ec97ff1de146e03dd65c36813c0aad61254242/EC.py#L231
+//      ~~TODO~~ `AddAssign` needs Deref https://github.com/cjeudy/EllipticCurves/blob/77ec97ff1de146e03dd65c36813c0aad61254242/EC.py#L231
 // impl std::ops::Deref for Point {
 //     type Target: ?Sized;
 //     fn deref(&self) -> &Self::Target {
@@ -262,14 +332,14 @@ impl std::ops::AddAssign for Point {
     }
 }
 ///         Overload of the - operator for two `&Point` objects
-impl std::ops::Sub for &Point/* <'_> */ {
+impl std::ops::Sub for &Point /* <'_> */ {
     type Output = Result<Point, Errs>;
     fn sub(self, rhs: Self) -> Self::Output {
         self + &-rhs
     }
 }
 ///         Overload of the - operator for two Point objects
-impl std::ops::Sub for Point/* <'_> */ {
+impl std::ops::Sub for Point /* <'_> */ {
     type Output = Result<Self, Errs>;
     fn sub(self, rhs: Self) -> Self::Output {
         &self - &rhs
@@ -286,7 +356,7 @@ impl std::ops::SubAssign for Point {
     }
 }
 /// Overload of the * operator for a Point and an integer
-impl std::ops::Mul<Ufeat> for &Point/* <'_> */ {
+impl std::ops::Mul<Ufeat> for &Point /* <'_> */ {
     type Output = Result<Point, Errs>;
     fn mul(self, rhs: Ufeat) -> Self::Output {
         // println!("DEBUG: is `self` a correct point? {}", self.curve().contains(self));
@@ -299,26 +369,37 @@ impl std::ops::Mul<Ufeat> for &Point/* <'_> */ {
         /* a small trick which I should think over again: `&Point` can't be dereferencing, and I feel like I shouldn't `impl` a _deref_ for it, and the simplest way to
         obtain `Point` and avoid troubles with short lived values inside following cycle is just to add a reference to _point at infinity_, which yields a new `Point`,
         but actually do nothing to with the value itself as it's _identity_ element */
-            // which turned out to be the same to `self.clone()`
+        //      which turned out to be the same to `self.clone()`
         // let mut self_ = self + &self.helper_new_point_at_infinity();
-        Ok(non_adj_repr.iter().fold(
-            // Ok((Point{curve: Rc::clone(&self.curve), ..Default::default()}, self.clone())), 
-            // TODO return here to understand `Rc` dereferencing
-            // Ok((Point::new(self.curve.clone(), None, Default::default())?, self.clone())), 
-            Ok((Point::AtInfinity{curve: self.curve()}, self.clone())), 
-            |b_tuple_result_runner, ternary_sign| {
-                let (result, runner) = b_tuple_result_runner?;
-                // println!("DEBUG: res is {result}");
-                // println!("DEBUG: runner is {runner}");
-                // println!("DEBUG: sign is {ternary_sign}");
-                Ok((match ternary_sign {
-                    1 => (&result + &runner)?,
-                    -1 => (&result - &runner)?,
-                    0 => result,
-                    _ => panic!("other values in `non_adj_repr` aren't expected")
-                }, (&runner + &runner)?))
-            }
-        )?.0)
+        Ok(non_adj_repr
+            .iter()
+            .fold(
+                // Ok((Point{curve: Rc::clone(&self.curve), ..Default::default()}, self.clone())),
+                // TODO return here to understand `Rc` dereferencing
+                // Ok((Point::new(self.curve.clone(), None, Default::default())?, self.clone())),
+                Ok((
+                    Point::AtInfinity {
+                        curve: self.curve(),
+                    },
+                    self.clone(),
+                )),
+                |b_tuple_result_runner, ternary_sign| {
+                    let (result, runner) = b_tuple_result_runner?;
+                    // println!("DEBUG: res is {result}");
+                    // println!("DEBUG: runner is {runner}");
+                    // println!("DEBUG: sign is {ternary_sign}");
+                    Ok((
+                        match ternary_sign {
+                            1 => (&result + &runner)?,
+                            -1 => (&result - &runner)?,
+                            0 => result,
+                            _ => panic!("other values in `non_adj_repr` aren't expected"),
+                        },
+                        (&runner + &runner)?,
+                    ))
+                },
+            )?
+            .0)
         // for i in 0..length {
         //     println!("DEBUG:`mul` round {i}");
         //     match non_adj_repr[i] {
