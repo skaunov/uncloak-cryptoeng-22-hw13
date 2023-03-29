@@ -1,9 +1,11 @@
 #![feature(result_option_inspect)]
 #![feature(iter_intersperse)]
 
-/// This is migration of https://github.com/cjeudy/EllipticCurves to Rust. It aims to be as close as possible to "drop-in" replacement. Mentions of
-/// "source" through-out the crate usually means
-/// the original code at the forementioned link. Diviations from the source are mostly labeled (in the comments) or induced by Clippy.
+/// This is migration of https://github.com/cjeudy/EllipticCurves to Rust. 
+/// 
+/// It aims to be as close as possible to "drop-in" replacement. Mentions of "source" through-out
+/// the crate usually means the original code at the forementioned link. Diviations 
+/// from the source are mostly labeled (in the comments) or induced by Clippy.
 ///
 /// A big up-front deviation is decision to use `crypto-bigint` for big integers. It breaks absent of limit on integers value which source have, but it's a deliberate choice for the exercise
 /// to learn and practice the cryptographic library while migrating. To compensate this divergency a feature introduced (namely `u8192`), which switch all computation to 8192-bit integers,
