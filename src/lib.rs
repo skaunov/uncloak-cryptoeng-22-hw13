@@ -12,7 +12,7 @@
 /// which is practically is quite similar to the unlimited integers source have, but very computationally intensive for integers of any length smaller than this huge limit. For default
 /// implementation 512-bit integers are chosen so that it would work with all the tests introduced in the source repository and have minimal computational burden.
 ///
-/// Please add `-- --nocapture` to `cargo test` if you want to get the output similar to the tests from the source, as source only prints tests/examples with no assertions.
+/// Running `cargo run --example example` mimics `example.py` from the source.
 ///
 /// Throughout the code there a lot of notes and snippets for myself to track the learning curve I had during the exercise. Of course, it would be removed
 /// in production commit, but I feel them to be appropriate for the exercise (including most of debug printing preserved in comments).
