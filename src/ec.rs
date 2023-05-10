@@ -45,9 +45,9 @@ impl EllipticCurve {
         // printing to stdout is ridiculous for a `lib` crate, but proper handliing of such nuances would require redesigning the whole thing, including defining new purpose of it
 
         // ~~TODO test what source would do when coefficient(s) would be greater than `modulus` (and reflect here)~~
-        /*      it seems to be a boring case as no material jumps out of the Internet on me trying to superficially research the issue; without definitive parameters testing source is quite
-        inefficient; so let's just prohibit it since it anyway shouldn't ever happen, and watch if somebody would answer to https://www.reddit.com/r/ef1p/comments/xgsco5/comment/jd9ner7 */
-        let panic_dont = true; // if modulus > Ufeat::from(isize::MAX as u64) {true} else {false};
+        /*      it seems to be a boring case as no material jumps out of the Internet on me trying to superficially research the issue; without definitive parameters 
+        testing the source is quite inefficient; so let's just prohibit it since it anyway shouldn't ever happen, and watch if somebody would answer to https://www.reddit.com/r/ef1p/comments/xgsco5/comment/jd9ner7 */
+        let panic_possible = false; // if modulus > Ufeat::from(isize::MAX as u64) {false} else {true};
                                // no need for it: the coefficients are ok to "wrap around"
 
         // `is_smooth` never used in the source, though it would go here
@@ -58,8 +58,8 @@ impl EllipticCurve {
             if coef.is_negative() {
                 r = r.neg();
             }
-            if !panic_dont {
-                // Seems to me that small negatives could be easily be greater than `modulus` after wrapping in the field
+            if panic_possible {
+                // Seems to me that small negatives could easily be greater than `modulus` after wrapping in the field
                 // if r.retrieve() >= modulus {panic!("coefficient is greater or equal to `modulus`")}
                 //      so it's more appropriate to cast the (checked above) `modulus` down to `u64` and compare it with `isize`
                 // written blindly and can contain errors in implementation; it is just to practice a bit with limbs without any particular purpose
